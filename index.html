@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convolution 2D Visualizer - Xử lý ảnh</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Convolution 2D Visualizer</h1>
+            <p class="subtitle">Mô phỏng trực quan phép tích chập trong xử lý ảnh</p>
+        </header>
+
+        <div class="theme-toggle">
+            <button id="themeBtn" onclick="toggleTheme()">🌙 Dark Mode</button>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Panel: Image Matrix -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>📷 Ma trận ảnh (I)</h2>
+                    <div class="controls">
+                        <select id="imageSize" onchange="changeImageSize()">
+                            <option value="3">3×3</option>
+                            <option value="4" selected>4×4</option>
+                            <option value="5">5×5</option>
+                            <option value="6">6×6</option>
+                        </select>
+                        <button onclick="randomMatrix()" class="btn-small">🎲 Random</button>
+                    </div>
+                </div>
+                <div id="imageMatrixContainer" class="matrix-container">
+                    <textarea id="imageInput" placeholder="Nhập ma trận ảnh..." oninput="updateImageMatrix()"></textarea>
+                </div>
+                <div id="imageDisplay" class="matrix-display"></div>
+            </div>
+
+            <!-- Right Panel: Kernel Matrix -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>🔧 Kernel (H)</h2>
+                    <div class="controls">
+                        <select id="kernelSize" onchange="changeKernelSize()">
+                            <option value="2">2×2</option>
+                            <option value="3" selected>3×3</option>
+                            <option value="5">5×5</option>
+                        </select>
+                        <button onclick="randomKernel()" class="btn-small">🎲 Random</button>
+                    </div>
+                </div>
+                <div id="kernelMatrixContainer" class="matrix-container">
+                    <textarea id="kernelInput" placeholder="Nhập ma trận kernel..." oninput="updateKernelMatrix()"></textarea>
+                </div>
+                <div id="kernelDisplay" class="matrix-display"></div>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div class="settings-panel">
+            <div class="setting-group">
+                <label>Padding:</label>
+                <input type="number" id="paddingInput" value="0" min="0" max="5" onchange="updateSettings()">
+            </div>
+            <div class="setting-group">
+                <label>Stride:</label>
+                <input type="number" id="strideInput" value="1" min="1" max="3" onchange="updateSettings()">
+            </div>
+            <div class="setting-group">
+                <label>Mode:</label>
+                <select id="modeSelect" onchange="updateSettings()">
+                    <option value="cross-correlation" selected>Cross-correlation</option>
+                    <option value="convolution">Convolution (flip)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="control-buttons">
+            <button onclick="resetAll()" class="btn btn-reset">🔄 Reset</button>
+            <button onclick="previousStep()" class="btn btn-prev">⏮ Previous</button>
+            <button onclick="nextStep()" class="btn btn-next">⏭ Next Step</button>
+            <button onclick="autoPlay()" id="autoPlayBtn" class="btn btn-auto">▶ Auto Play</button>
+            <button onclick="calculateAll()" class="btn btn-calculate">🧮 Calculate All</button>
+            <button onclick="exportJSON()" class="btn btn-export">📤 Export JSON</button>
+        </div>
+
+        <!-- Progress Info -->
+        <div class="progress-info">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <span id="progressText">Bước 0 / 0</span>
+        </div>
+
+        <!-- Visualization Area -->
+        <div class="visualization-area">
+            <h3>🔍 Visualization - Bước <span id="currentStep">0</span></h3>
+            
+            <div class="visual-grid">
+                <div id="imageGrid" class="grid-container"></div>
+                <div id="kernelOverlay" class="kernel-overlay"></div>
+            </div>
+
+            <div class="calculation-details">
+                <h4>📝 Chi tiết phép tính</h4>
+                <div id="calculationText" class="calc-text">
+                    Chưa có phép tính. Bấm "Next Step" để bắt đầu.
+                </div>
+            </div>
+
+            <div class="current-info">
+                <div class="info-box">
+                    <strong>Tọa độ hiện tại:</strong> <span id="currentPos">(0, 0)</span>
+                </div>
+                <div class="info-box">
+                    <strong>Vùng phủ (ROI):</strong> <span id="roiInfo">-</span>
+                </div>
+                <div class="info-box">
+                    <strong>Kết quả:</strong> <span id="currentResult">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Matrix -->
+        <div class="output-section">
+            <h3>📊 Ma trận kết quả (Output)</h3>
+            <div id="outputDisplay" class="matrix-display output-matrix"></div>
+            <div id="outputMatrixContainer" class="matrix-container"></div>
+        </div>
+
+        <!-- Step History -->
+        <div class="history-section">
+            <h3>📜 Lịch sử các bước</h3>
+            <div id="stepHistory" class="step-history"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
