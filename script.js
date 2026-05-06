@@ -184,11 +184,21 @@ function renderOutput(matrix) {
     dimensions.textContent = `${rows} x ${cols}`;
     container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
     
-    matrix.forEach(row => {
-        row.forEach(value => {
-            const cell = document.createElement('div');
+    matrix.forEach((row, i) => {
+        row.forEach((value, j) => {
+            const cell = document.createElement('a');
             cell.className = 'matrix-cell-output';
             cell.textContent = value;
+            cell.href = `#step-${i}-${j}`;
+            cell.addEventListener('click', (e) => {
+                e.preventDefault();
+                const stepEl = document.getElementById(`step-${i}-${j}`);
+                if (stepEl) {
+                    stepEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    stepEl.style.boxShadow = '0 0 0 3px #3498db';
+                    setTimeout(() => stepEl.style.boxShadow = '', 1500);
+                }
+            });
             container.appendChild(cell);
         });
     });
@@ -198,34 +208,45 @@ function renderOutput(matrix) {
 // Render Steps
 // ======================
 
-function renderSteps(steps) {
+function renderSteps(steps, kernel) {
     const container = document.getElementById('stepsDetail');
     const count = document.getElementById('stepsCount');
     
     container.innerHTML = '';
     count.textContent = `${steps.length} bước tính`;
     
+    const kRows = kernel.length;
+    const kCols = kernel[0].length;
+    
     steps.forEach((step, index) => {
         const item = document.createElement('div');
         item.className = 'step-item';
+        item.id = `step-${step.outputPos[0]}-${step.outputPos[1]}`;
         
-        // render covered matrix
         let coveredText = '';
-        step.coveredMatrix.forEach(row => {
-            coveredText += row.map(v => v.toString().padStart(3)).join('   ') + '\n';
+        step.coveredMatrix.forEach((row, m) => {
+            coveredText += row.map((v, n) => {
+                return `${v.toString().padStart(3)}[${m},${n}]`;
+            }).join('   ') + '\n';
         });
-        // render calculations
+        
+        let kernelText = '';
+        for (let m = 0; m < kRows; m++) {
+            for (let n = 0; n < kCols; n++) {
+                kernelText += `H[${m},${n}]=${kernel[m][n]}`;
+                if (n < kCols - 1) kernelText += '  ';
+            }
+            if (m < kRows - 1) kernelText += '\n';
+        }
+        
         let calcText = '';
-        const kCols = Math.sqrt(step.calculations.length);
         step.calculations.forEach((calc, idx) => {
-            const sign = calc.kernelValue >= 0 ? '+' : '';
-            calcText += `${calc.imageValue}×${calc.kernelValue}`;
+            calcText += `(${calc.imageValue}×${calc.kernelValue})`;
             
             if (idx < step.calculations.length - 1) {
                 calcText += ' + ';
             }
             
-            // xuống dòng mỗi hàng kernel
             if ((idx + 1) % kCols === 0 && idx < step.calculations.length - 1) {
                 calcText += '\n';
             }
@@ -237,8 +258,13 @@ function renderSteps(steps) {
             </h3>
             
             <div class="covered-region">
-Vùng phủ (kết hợp zero-padding):
+Vùng phủ (với vị trí H[m,n] tương ứng):
 ${coveredText}
+            </div>
+            
+            <div class="covered-region" style="border-left-color:#e74c3c;">
+Kernel H:
+${kernelText}
             </div>
             
             <div class="calculation">
@@ -341,7 +367,7 @@ function initializeApp() {
         
         // render
         renderOutput(result.output);
-        renderSteps(result.steps);
+        renderSteps(result.steps, kernel);
         
         // show section
         document.getElementById('resultSection').style.display = 'block';
