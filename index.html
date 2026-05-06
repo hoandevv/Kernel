@@ -346,11 +346,20 @@
     grid-template-columns: 1fr 2fr;
     gap: 1.25rem;
     align-items: start;
+    min-width: 0;
+  }
+
+  .result-output,
+  .result-steps {
+    min-width: 0;
   }
 
   .output-cells {
     display: grid;
     gap: 5px;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
   }
 
   .out-cell {
@@ -365,6 +374,10 @@
     cursor: pointer;
     transition: all 0.2s;
     min-width: 0;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .out-cell:hover, .out-cell.active {
@@ -475,9 +488,167 @@
   }
 
   @media (max-width: 680px) {
-    .input-columns { grid-template-columns: 1fr; }
-    .operator-divider { flex-direction: row; padding-top: 0; }
-    .result-grid { grid-template-columns: 1fr; }
+    .input-columns { 
+      grid-template-columns: 1fr; 
+      gap: 1rem;
+    }
+    .operator-divider { 
+      flex-direction: row; 
+      padding-top: 0;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .result-grid { 
+      grid-template-columns: 1fr; 
+      gap: 1rem;
+    }
+    .panel { 
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .output-cells { 
+      gap: 4px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .out-cell {
+      font-size: 0.78rem;
+      padding: 7px 4px;
+      min-height: 34px;
+      flex-shrink: 0;
+    }
+    .steps-scroll {
+      max-height: none;
+      overflow-y: visible;
+      padding-right: 0;
+    }
+    .detail-box {
+      overflow-x: auto;
+      white-space: pre;
+      -webkit-overflow-scrolling: touch;
+    }
+    .matrix-grid {
+      gap: 3px;
+    }
+    .matrix-grid input[type=number] {
+      padding: 6px 3px;
+      font-size: 0.85rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .input-columns { 
+      grid-template-columns: 1fr;
+      gap: 0.8rem;
+    }
+    .operator-divider { 
+      gap: 0.3rem;
+      margin: 0.8rem 0;
+    }
+    .op-star {
+      font-size: 1.4rem;
+    }
+    body { 
+      padding: 0.8rem 0.5rem 2.5rem;
+    }
+    .panel { 
+      padding: 0.8rem;
+      margin-bottom: 0.8rem;
+    }
+    .panel-title {
+      font-size: 0.65rem;
+      margin-bottom: 1rem;
+      gap: 8px;
+    }
+    .out-cell {
+      font-size: 0.7rem;
+      padding: 6px 2px;
+      min-height: 30px;
+    }
+    .controls-row {
+      gap: 6px;
+      margin-bottom: 0.8rem;
+    }
+    .controls-row span {
+      font-size: 0.7rem;
+    }
+    select.size-sel {
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      min-width: 50px;
+    }
+    .btn-ghost {
+      font-size: 0.65rem;
+      padding: 4px 8px;
+    }
+    .btn-calc {
+      padding: 0.8rem 1.5rem;
+      font-size: 0.8rem;
+      max-width: 100%;
+      margin: 1rem auto 0;
+    }
+    .matrix-grid {
+      gap: 2px;
+    }
+    .matrix-grid input[type=number] {
+      padding: 5px 2px;
+      font-size: 0.8rem;
+    }
+    .result-grid {
+      grid-template-columns: 1fr;
+      gap: 0.8rem;
+    }
+    .output-cells {
+      gap: 3px;
+    }
+    .step-card {
+      padding: 0.8rem 1rem;
+      border-radius: 6px;
+    }
+    .step-header {
+      margin-bottom: 0.4rem;
+    }
+    .detail-box {
+      font-size: 0.65rem;
+      padding: 6px 8px;
+    }
+    .step-result {
+      font-size: 0.8rem;
+      padding: 6px 10px;
+    }
+    header h1 {
+      font-size: clamp(1.2rem, 3vw, 1.8rem);
+    }
+    header p {
+      font-size: 0.8rem;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 10px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    body {
+      padding: 0.6rem 0.4rem 2rem;
+    }
+    .panel {
+      padding: 0.6rem;
+      margin-bottom: 0.6rem;
+    }
+    .out-cell {
+      font-size: 0.65rem;
+      padding: 5px 1px;
+      min-height: 28px;
+    }
+    select.size-sel {
+      min-width: 45px;
+      font-size: 0.65rem;
+    }
+    .btn-calc {
+      padding: 0.7rem 1rem;
+      font-size: 0.75rem;
+    }
   }
 
   footer {
@@ -586,12 +757,12 @@
       <div class="panel-title">Output</div>
       <div class="result-grid">
 
-        <div>
+        <div class="result-output">
           <div class="dims-label" id="outputDimensions"></div>
           <div id="outputMatrix" class="output-cells"></div>
         </div>
 
-        <div>
+        <div class="result-steps">
           <div class="steps-meta" id="stepsCount"></div>
           <div class="steps-scroll">
             <div id="stepsDetail" class="steps-list"></div>
@@ -710,7 +881,7 @@ document.getElementById('calculateBtn').addEventListener('click',()=>{
   }
 
   const outEl=document.getElementById('outputMatrix');
-  outEl.style.gridTemplateColumns=`repeat(${oC},1fr)`;
+  outEl.style.gridTemplateColumns=`repeat(${oC}, minmax(30px, 1fr))`;
   outEl.innerHTML='';
   out.forEach((row,ri)=>row.forEach((val,ci)=>{
     const cell=document.createElement('div');
