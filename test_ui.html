@@ -3,10 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convolution 2D Calculator</title>
+    <title>Test Giao diện Convolution</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .test-info {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .test-info h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .test-info ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        .test-info li {
+            margin-bottom: 8px;
+        }
+    </style>
 </head>
 <body>
+    <div class="test-info">
+        <h2>🎯 Hướng dẫn kiểm thử giao diện</h2>
+        <ul>
+            <li><strong>1. Kiểm tra nhập liệu:</strong> Nhập các số vào các ô ma trận I và kernel H</li>
+            <li><strong>2. Thay đổi kích thước:</strong> Chọn các kích thước khác nhau từ dropdown menu</li>
+            <li><strong>3. Nút Reset:</strong> Nhấn Reset để làm sạch ma trận</li>
+            <li><strong>4. Tính toán:</strong> Nhấn "Calculate Convolution" để xem kết quả</li>
+            <li><strong>5. Kiểm tra responsive:</strong> Thu nhỏ cửa sổ trình duyệt để xem giao diện trên mobile</li>
+        </ul>
+    </div>
+
+    <!-- Chèn giao diện chính -->
     <div class="container">
         <header>
             <h1>Convolution 2D Calculator</h1>

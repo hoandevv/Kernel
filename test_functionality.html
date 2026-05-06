@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Convolution Functionality</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-result {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .test-result.fail {
+            border-left-color: #f44336;
+        }
+        h1 {
+            color: #333;
+        }
+        .test-section {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Convolution 2D Calculator</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Parse Matrix Function</h2>
+        <div id="test1" class="test-result">Running...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Convolution Calculation</h2>
+        <div id="test2" class="test-result">Running...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: 3x3 Convolution</h2>
+        <div id="test3" class="test-result">Running...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 4: Edge Detection Kernel</h2>
+        <div id="test4" class="test-result">Running...</div>
+    </div>
+
+    <script>
+        // Copy the core functions from script.js
+        function parseMatrix(text) {
+            const lines = text.trim().split('\n');
+            const matrix = [];
+            for (let line of lines) {
+                line = line.trim();
+                if (line === '') continue;
+                const row = line.split(/\s+/).map(Number);
+                matrix.push(row);
+            }
+            return matrix;
+        }
+
+        function convolve(image, kernel) {
+            const imgRows = image.length;
+            const imgCols = image[0].length;
+            const kRows = kernel.length;
+            const kCols = kernel[0].length;
+            const centerX = Math.floor(kRows / 2);
+            const centerY = Math.floor(kCols / 2);
+            const output = [];
+            const steps = [];
+            
+            for (let i = 0; i < imgRows; i++) {
+                output[i] = [];
+                for (let j = 0; j < imgCols; j++) {
+                    let sum = 0;
+                    const coveredMatrix = [];
+                    const calculations = [];
+                    
+                    for (let m = 0; m < kRows; m++) {
+                        coveredMatrix[m] = [];
+                        for (let n = 0; n < kCols; n++) {
+                            const x = i + m - centerX;
+                            const y = j + n - centerY;
+                            let imageValue = 0;
+                            if (x >= 0 && x < imgRows && y >= 0 && y < imgCols) {
+                                imageValue = image[x][y];
+                            }
+                            const kernelValue = kernel[m][n];
+                            const product = imageValue * kernelValue;
+                            sum += product;
+                            coveredMatrix[m][n] = imageValue;
+                            calculations.push({ imageValue, kernelValue, product });
+                        }
+                    }
+                    output[i][j] = sum;
+                    steps.push({ outputPos: [i, j], coveredMatrix, calculations, result: sum });
+                }
+            }
+            return { output, steps };
+        }
+
+        // Test 1: Parse Matrix
+        try {
+            const testText = "1 2 3\n4 5 6\n7 8 9";
+            const parsed = parseMatrix(testText);
+            const expected = [[1,2,3],[4,5,6],[7,8,9]];
+            const pass = JSON.stringify(parsed) === JSON.stringify(expected);
+            document.getElementById('test1').innerHTML = 
+                pass ? '✓ PASS: Matrix parsed correctly' : 
+                       '✗ FAIL: Expected ' + JSON.stringify(expected) + ' but got ' + JSON.stringify(parsed);
+            document.getElementById('test1').className = pass ? 'test-result' : 'test-result fail';
+        } catch (e) {
+            document.getElementById('test1').innerHTML = '✗ FAIL: ' + e.message;
+            document.getElementById('test1').className = 'test-result fail';
+        }
+
+        // Test 2: Simple 2x2 Convolution
+        try {
+            const image = [[1, 2], [3, 4]];
+            const kernel = [[1, 0], [0, 1]];
+            const result = convolve(image, kernel);
+            const expected = [[1, 2], [3, 4]]; // Identity-like kernel
+            const pass = JSON.stringify(result.output) === JSON.stringify(expected);
+            document.getElementById('test2').innerHTML = 
+                pass ? '✓ PASS: 2x2 convolution correct' : 
+                       '✗ FAIL: Expected ' + JSON.stringify(expected) + ' but got ' + JSON.stringify(result.output);
+            document.getElementById('test2').className = pass ? 'test-result' : 'test-result fail';
+        } catch (e) {
+            document.getElementById('test2').innerHTML = '✗ FAIL: ' + e.message;
+            document.getElementById('test2').className = 'test-result fail';
+        }
+
+        // Test 3: 3x3 Convolution with known result
+        try {
+            const image = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+            const kernel = [[0, 0, 0], [0, 1, 0], [0, 0, 0]]; // Center only
+            const result = convolve(image, kernel);
+            const expected = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+            const pass = JSON.stringify(result.output) === JSON.stringify(expected);
+            document.getElementById('test3').innerHTML = 
+                pass ? '✓ PASS: 3x3 convolution correct' : 
+                       '✗ FAIL: Expected ' + JSON.stringify(expected) + ' but got ' + JSON.stringify(result.output);
+            document.getElementById('test3').className = pass ? 'test-result' : 'test-result fail';
+        } catch (e) {
+            document.getElementById('test3').innerHTML = '✗ FAIL: ' + e.message;
+            document.getElementById('test3').className = 'test-result fail';
+        }
+
+        // Test 4: Edge detection kernel
+        try {
+            const image = [[10, 10, 10], [10, 50, 10], [10, 10, 10]];
+            const kernel = [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]]; // Edge detection
+            const result = convolve(image, kernel);
+            // Center pixel: 10*(-1)*8 + 50*8 = -80 + 400 = 320
+            const centerValue = result.output[1][1];
+            const pass = centerValue === 320;
+            document.getElementById('test4').innerHTML = 
+                pass ? '✓ PASS: Edge detection kernel works (center=' + centerValue + ')' : 
+                       '✗ FAIL: Expected center=320 but got ' + centerValue;
+            document.getElementById('test4').className = pass ? 'test-result' : 'test-result fail';
+        } catch (e) {
+            document.getElementById('test4').innerHTML = '✗ FAIL: ' + e.message;
+            document.getElementById('test4').className = 'test-result fail';
+        }
+    </script>
+</body>
+</html>
