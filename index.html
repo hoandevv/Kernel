@@ -2,7 +2,10 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0f14">
 <title>Convolution 2D Calculator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -81,6 +84,8 @@
     z-index: 1;
     max-width: 960px;
     margin: 0 auto;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   .theme-toggle {
@@ -99,6 +104,10 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
   }
 
   .theme-toggle:hover {
@@ -282,6 +291,10 @@
   .matrix-grid {
     display: grid;
     gap: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
   }
 
   .matrix-grid input[type=number] {
@@ -294,10 +307,13 @@
     border-radius: 6px;
     padding: 8px 4px;
     width: 100%;
-    min-width: 0;
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
     outline: none;
     transition: border-color 0.2s, background 0.2s;
     -moz-appearance: textfield;
+    flex-shrink: 0;
   }
 
   .matrix-grid input[type=number]::-webkit-inner-spin-button,
@@ -307,6 +323,8 @@
   .matrix-grid input[type=number]:focus {
     border-color: var(--accent);
     background: var(--accent-dim2);
+    outline: 2px solid var(--accent);
+    outline-offset: -4px;
   }
 
   .btn-calc {
@@ -328,6 +346,10 @@
     max-width: 360px;
     margin: 1.75rem auto 0;
     transition: opacity 0.2s, transform 0.15s, background 0.3s;
+    min-height: 44px;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    user-select: none;
   }
 
   .btn-calc:hover { opacity: 0.9; }
@@ -359,7 +381,9 @@
     gap: 5px;
     width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .out-cell {
@@ -373,11 +397,14 @@
     color: var(--accent);
     cursor: pointer;
     transition: all 0.2s;
-    min-width: 0;
+    min-width: 44px;
     min-height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    -webkit-touch-callout: none;
+    user-select: none;
   }
 
   .out-cell:hover, .out-cell.active {
@@ -396,6 +423,8 @@
     padding: 1rem 1.2rem;
     transition: border-color 0.2s, background 0.2s;
     cursor: default;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .step-card.active {
@@ -531,6 +560,9 @@
       gap: 3px;
     }
     .matrix-grid input[type=number] {
+      min-width: 40px;
+      min-height: 40px;
+      height: 40px;
       padding: 6px 3px;
       font-size: 0.85rem;
     }
@@ -576,22 +608,30 @@
       font-size: 0.7rem;
       padding: 4px 8px;
       min-width: 50px;
+      touch-action: manipulation;
     }
     .btn-ghost {
       font-size: 0.65rem;
       padding: 4px 8px;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
     }
     .btn-calc {
       padding: 0.8rem 1.5rem;
       font-size: 0.8rem;
       max-width: 100%;
       margin: 1rem auto 0;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
     }
     .matrix-grid {
       gap: 2px;
     }
     .matrix-grid input[type=number] {
-      padding: 5px 2px;
+      min-width: 36px;
+      min-height: 36px;
+      height: 36px;
+      padding: 4px 2px;
       font-size: 0.8rem;
     }
     .result-grid {
@@ -611,6 +651,8 @@
     .detail-box {
       font-size: 0.65rem;
       padding: 6px 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .step-result {
       font-size: 0.8rem;
@@ -647,6 +689,16 @@
     }
     .btn-calc {
       padding: 0.7rem 1rem;
+      font-size: 0.75rem;
+    }
+    .matrix-grid {
+      gap: 2px;
+    }
+    .matrix-grid input[type=number] {
+      min-width: 32px;
+      min-height: 32px;
+      height: 32px;
+      padding: 3px 1px;
       font-size: 0.75rem;
     }
   }
