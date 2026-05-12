@@ -517,6 +517,10 @@
   }
 
   @media (max-width: 680px) {
+    .module-switcher,
+    .histogram-layout {
+      grid-template-columns: 1fr;
+    }
     .input-columns { 
       grid-template-columns: 1fr; 
       gap: 1rem;
@@ -741,6 +745,137 @@
   .steps-scroll::-webkit-scrollbar { width: 4px; }
   .steps-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
+  .module-switcher {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  .module-card {
+    text-align: left;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  }
+
+  .module-card strong {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text);
+    margin-bottom: 0.35rem;
+  }
+
+  .module-card span {
+    display: block;
+    color: var(--text2);
+    font-size: 0.8rem;
+  }
+
+  .module-card.active {
+    border-color: var(--accent);
+    background: var(--accent-dim2);
+    box-shadow: 0 0 0 1px var(--accent-dim);
+  }
+
+  .module-card:active { transform: scale(0.99); }
+  .module-panel[hidden] { display: none; }
+
+  .text-matrix {
+    width: 100%;
+    min-height: 184px;
+    resize: vertical;
+    font-family: var(--mono);
+    font-size: 0.92rem;
+    line-height: 1.9;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.15rem;
+    outline: none;
+    tab-size: 2;
+    white-space: pre;
+    overflow: auto;
+  }
+
+  .text-matrix:focus { border-color: var(--accent); }
+
+  .histogram-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .number-field {
+    font-family: var(--mono);
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    width: 90px;
+    outline: none;
+  }
+
+  .hist-table-wrap { overflow-x: auto; }
+  .hist-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+
+  .hist-table th,
+  .hist-table td {
+    border: 1px solid var(--border);
+    padding: 8px 9px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .hist-table th { color: var(--accent); background: var(--accent-dim2); }
+  .hist-table td:first-child,
+  .hist-table th:first-child { text-align: left; }
+
+  .hist-bars {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(26px, 1fr));
+    gap: 7px;
+    min-height: 150px;
+    align-items: end;
+    padding: 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .hist-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .hist-bar-fill {
+    width: 100%;
+    min-height: 3px;
+    border-radius: 5px 5px 0 0;
+    background: linear-gradient(180deg, var(--accent), rgba(0,212,170,0.35));
+  }
+
+  .hist-bar-label { font-family: var(--mono); font-size: 0.62rem; color: var(--text3); }
+  .hist-explain { color: var(--text2); font-size: 0.85rem; line-height: 1.7; }
+  .hist-error { color: var(--danger); font-family: var(--mono); font-size: 0.8rem; margin-top: 0.75rem; }
+  .matrix-hint { color: var(--text3); font-size: 0.76rem; margin-top: 0.6rem; }
+
   [data-theme="light"] .btn-calc { color: #ecfeff; }
 </style>
 </head>
@@ -753,10 +888,22 @@
 
   <header>
     <div class="badge">Signal Processing Tool</div>
-    <h1>Convolution <span>2D</span> Calculator</h1>
-    <p>Cross-correlation · Tính tích chập 2D trong xử lý ảnh</p>
+    <h1>Image Processing <span>Lab</span></h1>
+    <p>Chọn module xử lý ảnh: tích chập 2D hoặc cân bằng histogram</p>
   </header>
 
+  <div class="module-switcher" aria-label="Chọn module">
+    <button class="module-card active" data-module="convolution">
+      <strong>Convolution 2D</strong>
+      <span>Tính tích chập/cross-correlation với kernel</span>
+    </button>
+    <button class="module-card" data-module="histogram">
+      <strong>Histogram Equalization</strong>
+      <span>Cân bằng histogram cho ảnh mức xám</span>
+    </button>
+  </div>
+
+  <section class="module-panel" id="convolutionModule">
   <div class="panel">
     <div class="panel-title">Input</div>
     <div class="input-columns">
@@ -824,9 +971,65 @@
       </div>
     </div>
   </div>
+  </section>
+
+  <section class="module-panel" id="histogramModule" hidden>
+    <div class="panel">
+      <div class="panel-title">Histogram Equalization Input</div>
+      <div class="histogram-layout">
+        <div class="matrix-group">
+          <label>Ma trận ảnh mức xám <span>rk</span></label>
+          <textarea id="histMatrixInput" class="text-matrix" spellcheck="false">[
+  [5, 3, 3, 2],
+  [4, 2, 4, 2],
+  [5, 3, 5, 8],
+  [2, 4, 5, 4]
+]</textarea>
+          <div class="matrix-hint">Có thể nhập dạng JSON đẹp như trên hoặc mỗi hàng một dòng: 5 3 3 2</div>
+          <div class="hist-error" id="histError" style="display:none;"></div>
+        </div>
+        <div class="matrix-group">
+          <label>Số mức xám <span>L</span></label>
+          <input id="grayLevels" class="number-field" type="number" min="2" step="1" value="10">
+          <button class="btn-ghost" id="histSampleBtn" style="margin-top:1rem;">Dữ liệu mẫu</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:center;">
+        <button class="btn-calc" id="histCalculateBtn">
+          <span class="icon">▶</span>
+          Calculate Histogram Equalization
+        </button>
+      </div>
+    </div>
+
+    <div id="histResultSection" style="display:none;">
+      <div class="panel">
+        <div class="panel-title">Kết quả cân bằng histogram</div>
+        <div class="result-grid">
+          <div class="result-output">
+            <div class="dims-label" id="histOutputDimensions"></div>
+            <div id="histOutputMatrix" class="output-cells"></div>
+          </div>
+          <div class="result-steps">
+            <div class="steps-meta"><strong>Histogram gốc và sau cân bằng</strong></div>
+            <div id="histBeforeBars" class="hist-bars" style="margin-bottom:1rem;"></div>
+            <div id="histAfterBars" class="hist-bars"></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Bảng tính rk -> sk</div>
+        <div id="histTableWrap" class="hist-table-wrap"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Giải thích thuật toán</div>
+        <div id="histExplain" class="hist-explain"></div>
+      </div>
+    </div>
+  </section>
 
   <footer>
-    <p>Convolution 2D Calculator · hoandevv &copy; 2026</p>
+    <p>Image Processing Lab · hoandevv &copy; 2026</p>
   </footer>
 </div>
 
@@ -1013,6 +1216,160 @@ function highlightStep(idx){
   const cell=document.querySelector(`.out-cell[data-step="${idx}"]`);
   if(cell) cell.classList.add('active');
 }
+
+const moduleCards=document.querySelectorAll('.module-card');
+const convolutionModule=document.getElementById('convolutionModule');
+const histogramModule=document.getElementById('histogramModule');
+
+moduleCards.forEach(card=>{
+  card.addEventListener('click',()=>{
+    const selected=card.dataset.module;
+    moduleCards.forEach(item=>item.classList.toggle('active',item===card));
+    convolutionModule.hidden=selected!=='convolution';
+    histogramModule.hidden=selected!=='histogram';
+  });
+});
+
+function parseHistogramMatrix(text){
+  const cleaned=text.trim();
+  if(!cleaned) throw new Error('Vui lòng nhập ma trận ảnh mức xám.');
+
+  let matrix;
+  try{
+    matrix=JSON.parse(cleaned);
+  }catch(_){
+    matrix=cleaned.split('\n').filter(Boolean).map(line=>
+      line.trim().replace(/[\[\],;]/g,' ').split(/\s+/).filter(Boolean).map(Number)
+    );
+  }
+  return matrix;
+}
+
+function validateGrayMatrix(matrix,L){
+  if(!Array.isArray(matrix) || matrix.length===0){
+    throw new Error('Ma trận phải là mảng 2 chiều và không được rỗng.');
+  }
+  if(!Number.isInteger(L) || L<2){
+    throw new Error('Số mức xám L phải là số nguyên >= 2.');
+  }
+
+  const cols=Array.isArray(matrix[0]) ? matrix[0].length : 0;
+  if(cols===0) throw new Error('Mỗi hàng của ma trận phải có ít nhất 1 pixel.');
+
+  matrix.forEach((row,r)=>{
+    if(!Array.isArray(row) || row.length!==cols){
+      throw new Error(`Hàng ${r} không hợp lệ hoặc không cùng số cột.`);
+    }
+    row.forEach((pixel,c)=>{
+      if(!Number.isInteger(pixel)){
+        throw new Error(`Pixel tại [${r}][${c}] phải là số nguyên.`);
+      }
+      if(pixel<0 || pixel>L-1){
+        throw new Error(`Pixel ${pixel} tại [${r}][${c}] vượt ngoài khoảng [0, ${L-1}].`);
+      }
+    });
+  });
+}
+
+function histogramEqualization(matrix,L=10){
+  validateGrayMatrix(matrix,L);
+
+  const rows=matrix.length;
+  const cols=matrix[0].length;
+  const n=rows*cols;
+  const histogram=Array(L).fill(0);
+
+  matrix.forEach(row=>row.forEach(pixel=>{ histogram[pixel]++; }));
+
+  const cumulative=[];
+  let sum=0;
+  for(let k=0;k<L;k++){
+    sum+=histogram[k];
+    cumulative.push(sum);
+  }
+
+  const normalizedCDF=cumulative.map(value=>value/n);
+  const sk=normalizedCDF.map(value=>Math.round((L-1)*value));
+  const mapping=sk.map((value,index)=>({rk:index,sk:value}));
+  const resultMatrix=matrix.map(row=>row.map(pixel=>sk[pixel]));
+
+  return {histogram,cumulative,normalizedCDF,sk,mapping,resultMatrix,totalPixels:n,rows,cols,L};
+}
+
+function renderHistogramBars(containerId,values,L){
+  const el=document.getElementById(containerId);
+  const max=Math.max(...values,1);
+  el.innerHTML='';
+  values.forEach((value,index)=>{
+    const bar=document.createElement('div');
+    bar.className='hist-bar';
+    bar.title=`Mức ${index}: ${value} pixel`;
+    bar.innerHTML=`<div class="hist-bar-fill" style="height:${Math.max(3,(value/max)*110)}px"></div><div class="hist-bar-label">${index}</div>`;
+    el.appendChild(bar);
+  });
+}
+
+function renderHistogramResult(result){
+  const matrixEl=document.getElementById('histOutputMatrix');
+  matrixEl.style.gridTemplateColumns=`repeat(${result.cols}, minmax(30px, 1fr))`;
+  matrixEl.innerHTML='';
+  result.resultMatrix.forEach(row=>row.forEach(value=>{
+    const cell=document.createElement('div');
+    cell.className='out-cell';
+    cell.textContent=value;
+    matrixEl.appendChild(cell);
+  }));
+
+  document.getElementById('histOutputDimensions').innerHTML=`Output: <strong>${result.rows}×${result.cols}</strong> · n = <strong>${result.totalPixels}</strong>`;
+
+  const afterHistogram=Array(result.L).fill(0);
+  result.resultMatrix.forEach(row=>row.forEach(pixel=>{ afterHistogram[pixel]++; }));
+  renderHistogramBars('histBeforeBars',result.histogram,result.L);
+  renderHistogramBars('histAfterBars',afterHistogram,result.L);
+
+  const rows=result.mapping.map(item=>`
+    <tr>
+      <td>${item.rk}</td>
+      <td>${result.histogram[item.rk]}</td>
+      <td>${result.cumulative[item.rk]}</td>
+      <td>${result.normalizedCDF[item.rk].toFixed(4)}</td>
+      <td>${result.sk[item.rk]}</td>
+      <td>${item.rk} -> ${item.sk}</td>
+    </tr>`).join('');
+  document.getElementById('histTableWrap').innerHTML=`
+    <table class="hist-table">
+      <thead><tr><th>rk</th><th>nk</th><th>Sum n(j)</th><th>CDF/n</th><th>sk</th><th>Mapping</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  document.getElementById('histExplain').innerHTML=`
+    <p><strong>Ý tưởng:</strong> phân bố lại mức xám dựa trên histogram tích lũy để ảnh có độ tương phản tốt hơn.</p>
+    <p><strong>Công thức:</strong> sk = round((L - 1) * (Sum n(j) / n)), với n là tổng số pixel.</p>
+    <p><strong>Các bước:</strong> đọc ma trận, đếm n = rows * cols, tạo histogram L phần tử, cộng dồn CDF, chuẩn hóa CDF/n, tính sk, rồi thay mỗi pixel rk bằng sk tương ứng.</p>
+    <p><strong>Output:</strong> bảng trên gồm histogram gốc nk, cumulative, normalizedCDF, sk, mapping rk -> sk và ma trận kết quả.</p>`;
+}
+
+document.getElementById('histSampleBtn').addEventListener('click',()=>{
+  document.getElementById('grayLevels').value='10';
+  document.getElementById('histMatrixInput').value='[\n  [5, 3, 3, 2],\n  [4, 2, 4, 2],\n  [5, 3, 5, 8],\n  [2, 4, 5, 4]\n]';
+});
+
+document.getElementById('histCalculateBtn').addEventListener('click',()=>{
+  const errorEl=document.getElementById('histError');
+  errorEl.style.display='none';
+  try{
+    const L=parseInt(document.getElementById('grayLevels').value,10);
+    const matrix=parseHistogramMatrix(document.getElementById('histMatrixInput').value);
+    const result=histogramEqualization(matrix,L);
+    renderHistogramResult(result);
+    document.getElementById('histResultSection').style.display='block';
+    document.getElementById('histResultSection').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(err){
+    errorEl.textContent=err.message;
+    errorEl.style.display='block';
+    document.getElementById('histResultSection').style.display='none';
+  }
+});
 
 const themeToggle=document.getElementById('themeToggle');
 const html=document.documentElement;
