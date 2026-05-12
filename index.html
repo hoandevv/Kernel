@@ -518,6 +518,7 @@
 
   @media (max-width: 680px) {
     .module-switcher,
+    .scanner-grid,
     .histogram-layout {
       grid-template-columns: 1fr;
     }
@@ -786,6 +787,71 @@
   .module-card:active { transform: scale(0.99); }
   .module-panel[hidden] { display: none; }
 
+  .scanner-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .scan-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 0.8rem 0 1rem;
+  }
+
+  .scan-file { display: none; }
+
+  .scan-preview {
+    width: 100%;
+    min-height: 170px;
+    display: grid;
+    place-items: center;
+    background: var(--surface2);
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius);
+    overflow: hidden;
+    color: var(--text3);
+    font-size: 0.8rem;
+  }
+
+  .scan-preview img {
+    width: 100%;
+    height: 100%;
+    max-height: 240px;
+    object-fit: contain;
+  }
+
+  .scan-status { color: var(--text2); font-size: 0.82rem; }
+  .scan-status strong { color: var(--accent); }
+
+  .ocr-text {
+    width: 100%;
+    min-height: 92px;
+    margin-top: 0.9rem;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    line-height: 1.5;
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    resize: vertical;
+    outline: none;
+  }
+
+  .scan-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 0.8rem;
+    color: var(--text2);
+    font-size: 0.8rem;
+  }
+
   .text-matrix {
     width: 100%;
     min-height: 184px;
@@ -901,6 +967,36 @@
       <strong>Histogram Equalization</strong>
       <span>Cân bằng histogram cho ảnh mức xám</span>
     </button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Scanner dùng chung</div>
+    <div class="scanner-grid">
+      <div>
+        <div class="scan-status" id="scanStatus">
+          Chụp bằng camera điện thoại hoặc chọn ảnh, tool sẽ resize ảnh và lượng tử về ma trận mức xám.
+        </div>
+        <div class="scan-actions">
+          <label class="btn-ghost" for="cameraInput">📷 Chụp camera</label>
+          <label class="btn-ghost" for="imageInput">🖼️ Chọn ảnh</label>
+          <button class="btn-ghost" id="ocrScanBtn" disabled>OCR đọc số</button>
+          <button class="btn-ghost" id="applyScanBtn" disabled>Đưa vào module hiện tại</button>
+        </div>
+        <input id="cameraInput" class="scan-file" type="file" accept="image/*" capture="environment">
+        <input id="imageInput" class="scan-file" type="file" accept="image/*">
+        <div class="scan-option">
+          <span>Kích thước ma trận scan</span>
+          <select id="scanSize" class="size-sel" title="Scan size">
+            <option value="4" selected>4×4</option>
+            <option value="6">6×6</option>
+            <option value="8">8×8</option>
+            <option value="10">10×10</option>
+          </select>
+        </div>
+        <textarea id="ocrText" class="ocr-text" placeholder="Text OCR sẽ hiện ở đây, ví dụ: [[5,3,3,2], ...]"></textarea>
+      </div>
+      <div class="scan-preview" id="scanPreview">Chưa có ảnh</div>
+    </div>
   </div>
 
   <section class="module-panel" id="convolutionModule">
@@ -1033,6 +1129,7 @@
   </footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 function clamp(v,mn,mx){return Math.max(mn,Math.min(mx,v));}
 
@@ -1220,14 +1317,168 @@ function highlightStep(idx){
 const moduleCards=document.querySelectorAll('.module-card');
 const convolutionModule=document.getElementById('convolutionModule');
 const histogramModule=document.getElementById('histogramModule');
+let currentModule='convolution';
+let scannedMatrix=null;
+let scannedImage=null;
 
 moduleCards.forEach(card=>{
   card.addEventListener('click',()=>{
     const selected=card.dataset.module;
+    currentModule=selected;
     moduleCards.forEach(item=>item.classList.toggle('active',item===card));
     convolutionModule.hidden=selected!=='convolution';
     histogramModule.hidden=selected!=='histogram';
   });
+});
+
+function matrixToPrettyText(matrix){
+  return '[\n' + matrix.map(row=>'  [' + row.join(', ') + ']').join(',\n') + '\n]';
+}
+
+function syncMatrixToCurrentModule(matrix){
+  if(!matrix || !matrix.length) return;
+
+  if(currentModule==='histogram'){
+    const input=document.getElementById('histMatrixInput');
+    input.value=matrixToPrettyText(matrix);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    return;
+  }
+
+  const rows=matrix.length;
+  const cols=matrix[0].length;
+  document.getElementById('imageRows').value=String(rows);
+  document.getElementById('imageCols').value=String(cols);
+  buildMatrix('matrixIContainer',rows,cols,matrix);
+}
+
+function quantizeGray(value,L){
+  return Math.round((value/255)*(L-1));
+}
+
+function imageToGrayMatrix(img,size,L){
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  canvas.width=size;
+  canvas.height=size;
+  ctx.drawImage(img,0,0,size,size);
+
+  const data=ctx.getImageData(0,0,size,size).data;
+  const matrix=[];
+  for(let r=0;r<size;r++){
+    const row=[];
+    for(let c=0;c<size;c++){
+      const idx=(r*size+c)*4;
+      const gray=0.299*data[idx]+0.587*data[idx+1]+0.114*data[idx+2];
+      row.push(quantizeGray(gray,L));
+    }
+    matrix.push(row);
+  }
+  return matrix;
+}
+
+function refreshScannedMatrix(){
+  if(!scannedImage) return;
+  const size=parseInt(document.getElementById('scanSize').value,10);
+  const L=currentModule==='histogram' ? parseInt(document.getElementById('grayLevels').value,10)||10 : 10;
+  scannedMatrix=imageToGrayMatrix(scannedImage,size,L);
+  document.getElementById('scanStatus').innerHTML=`Đã scan thành ma trận <strong>${size}×${size}</strong>, mức xám <strong>0..${L-1}</strong>, và tự đưa vào module hiện tại.`;
+  document.getElementById('applyScanBtn').disabled=false;
+  document.getElementById('ocrScanBtn').disabled=false;
+  applyScannedMatrix();
+}
+
+function handleScanFile(file){
+  if(!file) return;
+  if(!file.type.startsWith('image/')){
+    document.getElementById('scanStatus').textContent='File không phải ảnh. Vui lòng chọn/chụp ảnh khác.';
+    return;
+  }
+
+  const img=new Image();
+  const url=URL.createObjectURL(file);
+  img.onload=()=>{
+    scannedImage=img;
+    document.getElementById('scanPreview').innerHTML='';
+    const preview=img.cloneNode();
+    preview.src=url;
+    document.getElementById('scanPreview').appendChild(preview);
+    refreshScannedMatrix();
+  };
+  img.src=url;
+}
+
+function applyScannedMatrix(){
+  if(!scannedMatrix) return;
+  syncMatrixToCurrentModule(scannedMatrix);
+}
+
+function parseOcrMatrix(text){
+  const cleaned=text
+    .replace(/[|]/g,'1')
+    .replace(/[Oo]/g,'0')
+    .replace(/{/g,'[')
+    .replace(/}/g,']')
+    .trim();
+
+  const matrix=parseHistogramMatrix(cleaned);
+  const hasBadNumber=matrix.some(row=>row.some(value=>!Number.isFinite(value)));
+  if(hasBadNumber) throw new Error('OCR đọc được text nhưng parser chưa tạo được ma trận số hợp lệ.');
+  return matrix.map(row=>row.map(value=>Math.round(value)));
+}
+
+async function runOcrScan(){
+  if(!scannedImage) return;
+  const status=document.getElementById('scanStatus');
+  const ocrText=document.getElementById('ocrText');
+
+  if(!window.Tesseract){
+    status.textContent='Không tải được Tesseract.js. Kiểm tra internet hoặc dùng chế độ scan pixel.';
+    return;
+  }
+
+  document.getElementById('ocrScanBtn').disabled=true;
+  status.textContent='OCR đang đọc số trong ảnh...';
+
+  try{
+    const result=await Tesseract.recognize(scannedImage,'eng',{
+      logger:m=>{
+        if(m.status){
+          const pct=m.progress ? ` ${Math.round(m.progress*100)}%` : '';
+          status.textContent=`OCR: ${m.status}${pct}`;
+        }
+      }
+    });
+
+    ocrText.value=result.data.text.trim();
+    scannedMatrix=parseOcrMatrix(ocrText.value);
+    syncMatrixToCurrentModule(scannedMatrix);
+    document.getElementById('applyScanBtn').disabled=false;
+    status.innerHTML=`OCR đọc được ma trận <strong>${scannedMatrix.length}×${scannedMatrix[0].length}</strong> và đã sync vào UI module hiện tại.`;
+  }catch(err){
+    status.textContent=err.message || 'OCR thất bại. Hãy thử ảnh rõ hơn hoặc nhập tay text OCR.';
+  }finally{
+    document.getElementById('ocrScanBtn').disabled=false;
+  }
+}
+
+document.getElementById('cameraInput').addEventListener('change',e=>handleScanFile(e.target.files[0]));
+document.getElementById('imageInput').addEventListener('change',e=>handleScanFile(e.target.files[0]));
+document.getElementById('scanSize').addEventListener('change',refreshScannedMatrix);
+document.getElementById('grayLevels').addEventListener('change',()=>{
+  if(currentModule==='histogram') refreshScannedMatrix();
+});
+document.getElementById('applyScanBtn').addEventListener('click',applyScannedMatrix);
+document.getElementById('ocrScanBtn').addEventListener('click',runOcrScan);
+document.getElementById('ocrText').addEventListener('change',()=>{
+  try{
+    scannedMatrix=parseOcrMatrix(document.getElementById('ocrText').value);
+    syncMatrixToCurrentModule(scannedMatrix);
+    document.getElementById('scanStatus').innerHTML=`Text OCR đã parse thành ma trận <strong>${scannedMatrix.length}×${scannedMatrix[0].length}</strong> và sync vào UI.`;
+  }catch(err){
+    document.getElementById('scanStatus').textContent=err.message;
+  }
 });
 
 function parseHistogramMatrix(text){
